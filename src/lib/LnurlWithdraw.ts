@@ -427,10 +427,8 @@ class LnurlWithdraw {
       bolt11: bolt11,
       // eslint-disable-next-line @typescript-eslint/camelcase
       expected_msatoshi: lnurlWithdrawEntity.msatoshi || undefined,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      expected_description: lnurlWithdrawEntity.description || undefined,
     };
-    let resp: IRespLnPay = await this._cyphernodeClient.lnPay(lnPayParams);
+    const resp: IRespLnPay = await this._cyphernodeClient.lnPay(lnPayParams);
 
     if (resp.error) {
       logger.debug("LnurlWithdraw.processLnPayment, ln_pay error!");
