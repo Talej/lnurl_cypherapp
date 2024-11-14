@@ -437,8 +437,6 @@ class LnurlWithdraw {
         bolt11: bolt11,
         // eslint-disable-next-line @typescript-eslint/camelcase
         expected_msatoshi: lnurlWithdrawEntity.msatoshi || undefined,
-        // eslint-disable-next-line @typescript-eslint/camelcase
-        expected_description: lnurlWithdrawEntity.description || undefined,
       };
       resp = await this._cyphernodeClient.lnPay(lnPayParams);
     }

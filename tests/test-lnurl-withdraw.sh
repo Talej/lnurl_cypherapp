@@ -387,7 +387,7 @@ wrong_bolt11() {
   # 3. User calls LNServiceWithdrawRequest
   # 4. User calls LNServiceWithdraw with an invalid bolt11
   # 5. User calls LNServiceWithdraw with wrong amount in bolt11
-  # 6. User calls LNServiceWithdraw with wrong description in bolt11
+  # 6. User calls LNServiceWithdraw with wrong description in bolt11 and it should work!
 
   trace 1 "\n\n[wrong_bolt11] ${On_Yellow}${BBlack} wrong_bolt11:                                                                     ${Color_Off}\n"
 
@@ -509,12 +509,12 @@ wrong_bolt11() {
   trace 3 "[wrong_bolt11] status=${status}"
 
   if [ "${status}" = "ERROR" ]; then
-    trace 1 "\n\n[wrong_bolt11] ${On_IGreen}${BBlack}  wrong_bolt11: SUCCESS!                                                                       ${Color_Off}\n"
-    date
-  else
     trace 1 "\n\n[wrong_bolt11] ${On_Red}${BBlack}  wrong_bolt11: FAILURE!                                                                         ${Color_Off}\n"
     date
     return 1
+  else
+    trace 1 "\n\n[wrong_bolt11] ${On_IGreen}${BBlack}  wrong_bolt11: SUCCESS!                                                                       ${Color_Off}\n"
+    date
   fi
 
   # We want to see if payment received (invoice status paid)
@@ -522,13 +522,13 @@ wrong_bolt11() {
   trace 3 "[wrong_bolt11] status=${status}"
 
   if [ "${status}" = "paid" ]; then
-    trace 1 "\n\n[wrong_bolt11] ${On_Red}${BBlack}  wrong_bolt11: FAILURE!                                                                         ${Color_Off}\n"
-    date
-    return 1
-  else
     trace 1 "\n\n[wrong_bolt11] ${On_IGreen}${BBlack}  wrong_bolt11: SUCCESS!                                                                       ${Color_Off}\n"
     date
     return 0
+  else
+    trace 1 "\n\n[wrong_bolt11] ${On_Red}${BBlack}  wrong_bolt11: FAILURE!                                                                         ${Color_Off}\n"
+    date
+    return 1
   fi
 
 }
