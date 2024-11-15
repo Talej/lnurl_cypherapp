@@ -451,6 +451,25 @@ class LnurlWithdraw {
       lnurlWithdrawEntity = await this._lnurlDB.saveLnurlWithdraw(
         lnurlWithdrawEntity
       );
+
+      if (lnurlWithdrawEntity?.webhookUrl && lnurlWithdrawEntity?.webhookUrl.length > 0) {
+        // Immediately send a webhook to let client know a failed attempt has been made.
+        const postdata = {
+          action: "claimAttemptFailed",
+          lnurlWithdrawId: lnurlWithdrawEntity.lnurlWithdrawId,
+          bolt11: lnurlWithdrawEntity.bolt11,
+          lnPayResponse: resp.error,
+          updatedTs: lnurlWithdrawEntity.updatedTs
+        };
+
+        logger.debug(
+          "LnurlWithdraw.processLnPayment, claim attempt failed, calling back with postdata=",
+          postdata
+        );
+
+        Utils.post(lnurlWithdrawEntity.webhookUrl, postdata);
+      }
+
     } else {
       logger.debug("LnurlWithdraw.processLnPayment, ln_pay success!");
 

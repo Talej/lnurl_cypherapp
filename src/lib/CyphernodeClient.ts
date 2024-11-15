@@ -550,7 +550,9 @@ class CyphernodeClient {
       result = {
         error: {
           code: ErrorCodes.InternalError,
-          message: JSON.stringify(response.data),
+          message: response.data.message
+            ? response.data.message
+            : JSON.stringify(response.data),
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as IResponseError<any>,
       } as IRespLnPay;
