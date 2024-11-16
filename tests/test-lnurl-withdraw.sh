@@ -1203,12 +1203,12 @@ start_callback_server() {
   trace 1 "\n\n[start_callback_server] ${BCyan}Let's start a callback server!...${Color_Off}\n"
 
   port=${1:-${callbackserverport}}
-  cotnainerseq=${2}
+  containerseq=${2}
 
-  docker run --rm -t --name tests-lnurl-withdraw-cb${cotnainerseq} --network=cyphernodeappsnet alpine sh -c \
+  docker run --rm -t --name tests-lnurl-withdraw-cb${containerseq} --network=cyphernodeappsnet alpine sh -c \
   "nc -vlp${port} -e sh -c 'echo -en \"HTTP/1.1 200 OK\\\\r\\\\n\\\\r\\\\n\" ; echo -en \"\\033[40m\\033[0;37m\" >&2 ; date >&2 ; timeout 1 tee /dev/tty | cat ; echo -e \"\033[0m\" >&2'" &
   sleep 2
-  # docker network connect cyphernodenet tests-lnurl-withdraw-cb${cotnainerseq}
+  # docker network connect cyphernodenet tests-lnurl-withdraw-cb${containerseq}
 }
 
 TRACING=3
