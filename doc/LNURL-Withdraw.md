@@ -362,3 +362,18 @@ Response:
   }
 }
 ```
+
+- LNURL Withdraw attempt failed
+
+```json
+{
+  "action": "claimAttemptFailed",
+  "lnurlWithdrawId": 250,
+  "bolt11": "lnbcrt5201080p1pnn0f2csp5exylqpp349slwnum55z0msx9jr367xkju459nz2gl3vzgsz6zdvspp5gh0vusulhesdrtykt8xhhcvmtvgarwkl30j2ulgt48fx7gr5dqzsdq0v3jhxcejxqcnqwqxqyjw5qcqp29qxpqysgqaf76lktf0up2yhfhmwttkpz84v2y75vsnysh02p2jq0vf7ncgrhnnp5t5d84czzq9av7w0yjhm8trxnqy67hh5nh45usptuktlw8u4qquwjr42",
+  "lnPayResponse": {
+    "code": -32603,
+    "message": "Destination 026ec94ffa595479ccd80fe5f0bdf1481dbb8b75b976a5bfe21f0556c6376d549a is not reachable directly and all routehints were unusable."
+  },
+  "updatedTs": "2024-11-15T19:47:36.217Z"
+}
+```

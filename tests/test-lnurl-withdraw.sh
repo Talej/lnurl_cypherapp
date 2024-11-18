@@ -454,6 +454,9 @@ wrong_bolt11() {
   local status=$(get_invoice_status "${invoice}")
   trace 3 "[wrong_bolt11] status=${status}"
 
+  # "Failed claim attempt" callback
+  start_callback_server
+
   trace 2 "\n\n[wrong_bolt11] ${BPurple}User calls LN Service Withdraw with wrong amount in bolt11...\n${Color_Off}"
 
   # User calls LN Service LNURL Withdraw
@@ -1139,6 +1142,9 @@ fallback4() {
     trace 1 "\n\n[fallback4] ${On_IGreen}${BBlack}  fallback4: Status unpaid!  Good!                                                               ${Color_Off}\n"
   fi
 
+  # "Failed claim attempt" callback
+  start_callback_server
+
   # 6. User calls LNServiceWithdraw -> fails because LN02 is down
   trace 3 "[fallback4] Shutting down lightning2..."
   docker stop $(docker ps -q -f "name=lightning2")
@@ -1197,12 +1203,12 @@ start_callback_server() {
   trace 1 "\n\n[start_callback_server] ${BCyan}Let's start a callback server!...${Color_Off}\n"
 
   port=${1:-${callbackserverport}}
-  conainerseq=${2}
+  containerseq=${2}
 
-  docker run --rm -t --name tests-lnurl-withdraw-cb${conainerseq} --network=cyphernodeappsnet alpine sh -c \
+  docker run --rm -t --name tests-lnurl-withdraw-cb${containerseq} --network=cyphernodeappsnet alpine sh -c \
   "nc -vlp${port} -e sh -c 'echo -en \"HTTP/1.1 200 OK\\\\r\\\\n\\\\r\\\\n\" ; echo -en \"\\033[40m\\033[0;37m\" >&2 ; date >&2 ; timeout 1 tee /dev/tty | cat ; echo -e \"\033[0m\" >&2'" &
   sleep 2
-  # docker network connect cyphernodenet tests-lnurl-withdraw-cb${conainerseq}
+  # docker network connect cyphernodenet tests-lnurl-withdraw-cb${containerseq}
 }
 
 TRACING=3
@@ -1222,16 +1228,17 @@ exec_in_test_container_leave_lf apk add --update curl
 
 ln_reconnect
 
-happy_path "${callbackurl}" \
-&& wrong_bolt11 "${callbackurl}" \
-&& expired1 "${callbackurl}" \
-&& expired2 "${callbackurl}" \
-&& deleted1 "${callbackurl}" \
-&& deleted2 "${callbackurl}" \
-&& fallback1 "${callbackservername}" "${callbackserverport}" \
-&& fallback2 "${callbackservername}" "${callbackserverport}" \
-&& fallback3 "${callbackservername}" "${callbackserverport}" \
-&& fallback4 "${callbackservername}" "${callbackserverport}"
+happy_path "${callbackurl}" && \
+wrong_bolt11 "${callbackurl}" && \
+expired1 "${callbackurl}" && \
+expired2 "${callbackurl}" && \
+deleted1 "${callbackurl}" && \
+deleted2 "${callbackurl}" && \
+fallback1 "${callbackservername}" "${callbackserverport}" && \
+fallback2 "${callbackservername}" "${callbackserverport}" && \
+fallback3 "${callbackservername}" "${callbackserverport}" && \
+fallback4 "${callbackservername}" "${callbackserverport}" && \
+trace 1 "\n\n[test-lnurl-withdraw] ${BCyan}All tests passed!${Color_Off}\n"
 
 trace 1 "\n\n[test-lnurl-withdraw] ${BCyan}Tearing down...${Color_Off}\n"
 wait
