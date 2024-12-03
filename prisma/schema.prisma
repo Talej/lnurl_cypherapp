@@ -23,6 +23,8 @@ model LnurlWithdrawEntity {
   paidCalledbackTs    DateTime?
   batchedCalledback   Boolean   @default(false)
   batchedCalledbackTs DateTime?
+  expiredCalledback   Boolean   @default(false)
+  expiredCalledbackTs DateTime?
   lnurl               String
   bolt11              String?
   btcFallbackAddress  String?
@@ -39,6 +41,8 @@ model LnurlWithdrawEntity {
   @@index([externalId])
   @@index([bolt11])
   @@index([btcFallbackAddress])
+  @@index([deleted, paid, expiresAt, fallbackDone, btcFallbackAddress])
+  @@index([deleted, webhookUrl, withdrawnDetails, paid, batchRequestId, paidCalledback, batchedCalledback])
 }
 
 model LnurlPayEntity {
@@ -46,7 +50,7 @@ model LnurlPayEntity {
   externalId        String   @unique
   minMsatoshi       Int       @default(1)
   maxMsatoshi       Int       @default(1)
-  description       String?   
+  description       String?
   webhookUrl        String?
   lnurl             String
   requests          LnurlPayRequestEntity[]
