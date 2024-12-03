@@ -377,3 +377,13 @@ Response:
   "updatedTs": "2024-11-15T19:47:36.217Z"
 }
 ```
+
+- LNURL Withdraw voucher expired
+
+```json
+{
+  "action": "lnurlWithdrawExpired",
+  "lnurlWithdrawId": 253,
+  "expiresAt": "2024-11-15T19:47:36.217Z",
+}
+```

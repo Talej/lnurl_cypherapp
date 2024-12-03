@@ -99,39 +99,43 @@ class LnurlDBPrisma {
 
     // If there's a lnurlWithdrawId as arg, let's add it to the where clause!
 
-    let lws;
-    let whereClause = {
+    // We want to get all the lnurlWithdraws that:
+    // - are not deleted, and
+    // - have a webhookUrl set
+    // and are either:
+    // - Paid but paidCalledback is false, or
+    // - Batched (batchRequestId is not null) but batchedCalledback is false, or
+    // - Expired (expiresAt is less then current Date) but expiredCalledback is false
+    //
+    // If a lnurlWithdrawId is provided, we want to get that specific one but with the same conditions.
+
+    const lws = await this._db?.lnurlWithdrawEntity.findMany({
       where: {
+        lnurlWithdrawId,
         deleted: false,
         webhookUrl: { not: null },
-        withdrawnDetails: { not: null },
-        // withdrawnTs: { not: null },
         AND: [
-          { OR: [{ paid: true }, { batchRequestId: { not: null } }] },
           {
             OR: [
-              { paidCalledback: false },
               {
-                AND: [
-                  { batchedCalledback: false },
-                  { batchRequestId: { not: null } },
-                ],
+                paid: true,
+                paidCalledback: false,
+              },
+              {
+                batchRequestId: { not: null },
+                batchedCalledback: false,
+              },
+              {
+                expiresAt: { lt: new Date() },
+                expiredCalledback: false,
               },
             ],
           },
         ],
       },
-    }
+    });
 
-    if (lnurlWithdrawId) {
-      whereClause.where = Object.assign(whereClause.where, { lnurlWithdrawId });
-    }
-
-    // logger.debug("LnurlDBPrisma.getNonCalledbackLnurlWithdraws, whereClause=", whereClause);
-
-    lws = await this._db?.lnurlWithdrawEntity.findMany(whereClause);
-
-    return lws as LnurlWithdrawEntity[];
+    return lws || [];
   }
 
   async getFallbackLnurlWithdraws(): Promise<LnurlWithdrawEntity[]> {

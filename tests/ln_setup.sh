@@ -20,10 +20,13 @@ echo ; echo "address=${address}"
 data='{"address":"'${address}'","amount":1}'
 docker exec -it `docker ps -q -f "name=proxy\."` curl -d "${data}" localhost:8888/spend
 
-mine 6
-
-echo ; echo "Sleeping 5 seconds..."
-sleep 5
+echo ; echo "Mining blocks..."
+mine 1
+sleep 2
+mine 1
+sleep 2
+mine 1
+sleep 2
 
 # Create a channel between the two nodes
 data='{"peer":"'${connectstring2}'","msatoshi":'${channelmsats}'}'

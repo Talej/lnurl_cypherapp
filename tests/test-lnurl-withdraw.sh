@@ -16,7 +16,8 @@
 
 # 1. Create a LNURL Withdraw with expiration=now
 # 2. Get it and compare
-# 3. User calls LNServiceWithdrawRequest -> Error, expired!
+# 3. Expired webhook is called
+# 4. User calls LNServiceWithdrawRequest -> Error, expired!
 
 # Expired 2
 
@@ -24,7 +25,8 @@
 # 2. Get it and compare
 # 3. User calls LNServiceWithdrawRequest
 # 4. Sleep 5 seconds
-# 5. User calls LNServiceWithdraw -> Error, expired!
+# 5. Expired webhook is called
+# 6. User calls LNServiceWithdraw -> Error, expired!
 
 # Deleted 1
 
@@ -49,9 +51,10 @@
 # 3. Listen to watch webhook
 # 4. Create a LNURL Withdraw with expiration=now and a btcfallbackaddr
 # 5. Get it and compare
-# 6. User calls LNServiceWithdrawRequest -> Error, expired!
-# 7. Fallback should be triggered, LNURL callback called (port 1111), Cyphernode's watch callback called (port 1112)
-# 8. Mined block and Cyphernode's confirmed watch callback called (port 1113)
+# 6. Expired webhook is called back
+# 7. User calls LNServiceWithdrawRequest -> Error, expired!
+# 8. Fallback should be triggered, LNURL callback called (port 1111), Cyphernode's watch callback called (port 1112)
+# 9. Mined block and Cyphernode's confirmed watch callback called (port 1113)
 
 # fallback 2, use of Bitcoin fallback address in a batched spend
 
@@ -60,10 +63,11 @@
 # 3. Listen to watch webhook
 # 4. Create a LNURL Withdraw with expiration=now and a btcfallbackaddr
 # 5. Get it and compare
-# 6. User calls LNServiceWithdrawRequest -> Error, expired!
-# 7. Fallback should be triggered, added to current batch using the Batcher
-# 8. Wait for the batch to execute, LNURL callback called (port 1111), Cyphernode's watch callback called (port 1112), Batcher's execute callback called (port 1113)
-# 9. Mined block and Cyphernode's confirmed watch callback called (port 1114)
+# 6. Expired webhook is called back
+# 7. User calls LNServiceWithdrawRequest -> Error, expired!
+# 8. Fallback should be triggered, added to current batch using the Batcher
+# 9. Wait for the batch to execute, LNURL callback called (port 1111), Cyphernode's watch callback called (port 1112), Batcher's execute callback called (port 1113)
+# 10. Mined block and Cyphernode's confirmed watch callback called (port 1114)
 
 # fallback 3, force fallback
 
@@ -72,21 +76,23 @@
 # 3. Listen to watch webhook
 # 4. Create a LNURL Withdraw with expiration=tomorrow and a btcfallbackaddr
 # 5. Get it and compare
-# 6. User calls LNServiceWithdrawRequest -> works, not expired!
-# 7. Call forceFallback
-# 8. Fallback should be triggered, LNURL callback called (port 1111), Cyphernode's watch callback called (port 1112)
-# 9. Mined block and Cyphernode's confirmed watch callback called (port 1113)
+# 6. Expired webhook is called back
+# 7. User calls LNServiceWithdrawRequest -> works, not expired!
+# 8. Call forceFallback
+# 9. Fallback should be triggered, LNURL callback called (port 1111), Cyphernode's watch callback called (port 1112)
+# 10. Mined block and Cyphernode's confirmed watch callback called (port 1113)
 
 # fallback 4, execute fallback on a bolt11 paid in background (lnurl app doesn't know it's been paid)
 
 # 1. Cyphernode.getnewaddress -> btcfallbackaddr
 # 2. Create a LNURL Withdraw with expiration=tomorrow and a btcfallbackaddr
 # 3. Get it and compare
-# 4. User calls LNServiceWithdrawRequest -> works, not expired!
-# 5. Shut down LN02
-# 6. User calls LNServiceWithdraw -> fails because LN02 is down
-# 7. Call ln_pay directly on Cyphernode so that LNURLapp doesn't know about it
-# 8. Call forceFallback -> should check payment status and say it's already paid!
+# 4. Expired webhook is called back
+# 5. User calls LNServiceWithdrawRequest -> works, not expired!
+# 6. Shut down LN02
+# 7. User calls LNServiceWithdraw -> fails because LN02 is down
+# 8. Call ln_pay directly on Cyphernode so that LNURLapp doesn't know about it
+# 9. Call forceFallback -> should check payment status and say it's already paid!
 
 
 . ./colors.sh
@@ -362,6 +368,7 @@ happy_path() {
   local withdrawResponse=$(call_lnservice_withdraw "${withdrawRequestResponse}" "${bolt11}")
   trace 3 "[happy_path] withdrawResponse=${withdrawResponse}"
 
+  # Wait for the LNURL Payment callback
   wait
 
   # We want to see if payment received (invoice status paid)
@@ -475,6 +482,9 @@ wrong_bolt11() {
     return 1
   fi
 
+  # Wait for the "Failed claim attempt" callback
+  wait
+
   # We want to see if payment received (invoice status paid)
   status=$(get_invoice_status "${invoice}")
   trace 3 "[wrong_bolt11] status=${status}"
@@ -541,11 +551,15 @@ expired1() {
   #
   # 1. Create a LNURL Withdraw with expiration=now
   # 2. Get it and compare
-  # 3. User calls LNServiceWithdrawRequest -> Error, expired!
+  # 3. Expired webhook is called back
+  # 4. User calls LNServiceWithdrawRequest -> Error, expired!
 
   trace 1 "\n\n[expired1] ${On_Yellow}${BBlack} Expired 1:                                                                        ${Color_Off}\n"
 
   local callbackurl=${1}
+
+  # "Expired voucher" callback
+  start_callback_server
 
   # Service creates LNURL Withdraw
   local createLnurlWithdraw=$(create_lnurl_withdraw "${callbackurl}" 0)
@@ -568,6 +582,9 @@ expired1() {
   # Decode LNURL
   local serviceUrl=$(decode_lnurl "${lnurl}")
   trace 3 "[expired1] serviceUrl=${serviceUrl}"
+
+  # Wait for the "Expired voucher" callback
+  wait
 
   # User calls LN Service LNURL Withdraw Request
   local withdrawRequestResponse=$(call_lnservice_withdraw_request "${serviceUrl}")
@@ -594,6 +611,9 @@ expired2() {
   trace 1 "\n\n[expired2] ${On_Yellow}${BBlack} Expired 2:                                                                        ${Color_Off}\n"
 
   local callbackurl=${1}
+
+  # "Expired voucher" callback
+  start_callback_server
 
   # Service creates LNURL Withdraw
   local createLnurlWithdraw=$(create_lnurl_withdraw "${callbackurl}" 10)
@@ -631,6 +651,9 @@ expired2() {
 
   trace 3 "[expired2] Sleeping 10 seconds..."
   sleep 10
+
+  # Wait for the "Expired voucher" callback
+  wait
 
   # User calls LN Service LNURL Withdraw
   local withdrawResponse=$(call_lnservice_withdraw "${withdrawRequestResponse}" "${bolt11}")
@@ -803,9 +826,6 @@ fallback1() {
 
   trace 1 "\n\n[fallback1] ${On_Yellow}${BBlack} Fallback 1:                                                                        ${Color_Off}\n"
 
-  local callbackserver=${1}
-  local callbackport=${2}
-
   local zeroconfport=$((${callbackserverport}+1))
   local oneconfport=$((${callbackserverport}+2))
   local callbackurlCnWatch0conf="http://${callbackservername}2:${zeroconfport}"
@@ -846,7 +866,10 @@ fallback1() {
   local serviceUrl=$(decode_lnurl "${lnurl}")
   trace 3 "[fallback1] serviceUrl=${serviceUrl}"
 
+  # fallback (or expired) callback server
   start_callback_server
+
+  # 0-conf callback server
   start_callback_server ${zeroconfport} 2
 
   trace 2 "\n\n[fallback1] ${BPurple}Waiting for fallback execution, fallback callback and the 0-conf callback...${Color_Off}\n"
@@ -863,13 +886,20 @@ fallback1() {
     trace 2 "[fallback1] EXPIRED!  Good!"
   fi
 
+  # Wait for the fallback (or expired) and 0-conf callbacks
   wait
 
+  # expired voucher (or fallback) callback server
+  start_callback_server
+
+  # 1-conf callback server
   start_callback_server ${oneconfport} 3
 
   trace 2 "\n\n[fallback1] ${BPurple}Waiting for the 1-conf callback...${Color_Off}\n"
 
   mine
+
+  # Wait for the 1-conf and expired (or fallback) callbacks
   wait
 
   trace 1 "\n\n[fallback1] ${On_IGreen}${BBlack} Fallback 1: SUCCESS!                                                                       ${Color_Off}\n"
@@ -933,7 +963,7 @@ fallback2() {
   local serviceUrl=$(decode_lnurl "${lnurl}")
   trace 3 "[fallback2] serviceUrl=${serviceUrl}"
 
-  # fallback batched callback
+  # fallback batched (or voucher expired) callback
   start_callback_server
 
   trace 2 "\n\n[fallback2] ${BPurple}Waiting for fallback batched callback...\n${Color_Off}"
@@ -950,7 +980,11 @@ fallback2() {
     trace 2 "[fallback2] EXPIRED!"
   fi
 
+  # Wait for the fallback batched (or voucher expired) callback
   wait
+
+  # voucher expired (or fallback batched) callback
+  start_callback_server
 
   # fallback paid callback
   start_callback_server
@@ -959,6 +993,7 @@ fallback2() {
 
   trace 2 "\n\n[fallback2] ${BPurple}Waiting for fallback execution and the 0-conf callback...\n${Color_Off}"
 
+  # Wait for the fallback paid, 0-conf callbacks and voucher expired (or fallback batched) callbacks
   wait
 
   # 1-conf callback
@@ -967,6 +1002,8 @@ fallback2() {
   trace 2 "\n\n[fallback2] ${BPurple}Waiting for the 1-conf callback...\n${Color_Off}"
 
   mine
+
+  # Wait for the 1-conf callback
   wait
 
   trace 1 "\n\n[fallback2] ${On_IGreen}${BBlack} Fallback 2: SUCCESS!                                                                       ${Color_Off}\n"
@@ -1030,7 +1067,10 @@ fallback3() {
   local serviceUrl=$(decode_lnurl "${lnurl}")
   trace 3 "[fallback3] serviceUrl=${serviceUrl}"
 
+  # Fallback (or voucher expired) callback server
   start_callback_server
+
+  # 0-conf callback server
   start_callback_server ${zeroconfport} 2
 
   # User calls LN Service LNURL Withdraw Request
@@ -1056,13 +1096,20 @@ fallback3() {
   fi
   trace 3 "[fallback3] force_lnurl_fallback=${force_lnurl_fallback}"
 
+  # Wait for the fallback (or voucher expired) and 0-conf callbacks to happen
   wait
 
+  # voucher expired (or Fallback) callback server
+  start_callback_server
+
+  # 1-conf callback server
   start_callback_server ${oneconfport} 3
 
   trace 2 "\n\n[fallback3] ${BPurple}Waiting for the 1-conf callback...\n${Color_Off}"
 
   mine
+
+  # Wait for the 1-conf callback and voucher expired (or fallback) callbacks
   wait
 
   trace 1 "\n\n[fallback3] ${On_IGreen}${BBlack} Fallback 3: SUCCESS!                                                                       ${Color_Off}\n"
@@ -1160,6 +1207,9 @@ fallback4() {
     return 1
   fi
 
+  # Wait for the "Failed claim attempt" callback
+  wait
+
   # Reconnecting the two LN instances...
   ln_reconnect
 
@@ -1171,6 +1221,7 @@ fallback4() {
   lnpaystatus=$(echo "${lnpay}" | jq -r ".status")
   trace 3 "[fallback4] lnpaystatus=${lnpaystatus}"
 
+  # Fallback callback server
   start_callback_server
 
   trace 2 "\n\n[fallback4] ${BPurple}Waiting for fallback execution callback...\n${Color_Off}"
@@ -1196,6 +1247,7 @@ fallback4() {
     return 1
   fi
 
+  # Wait for the fallback callback to happen
   wait
 }
 
